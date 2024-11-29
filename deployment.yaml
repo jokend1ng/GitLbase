@@ -1,16 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: liquibase-config
+data:
+  LIQUIBASE_CHANGELOG: "/liquibase/change-log/sqlMigration/init.sql"
+  LIQUIBASE_URL: "jdbc:postgresql://host.docker.internal:5432/postgres"
+  LIQUIBASE_USER: "postgres"
+  LIQUIBASE_PASSWORD: "postgres"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: liquibase-deployment
+  name: li
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: liquibase
+      app: liquibase-nginx
   template:
     metadata:
       labels:
-        app: liquibase
+        app: liquibase-nginx
     spec:
       initContainers:
         - name: liquibase-init
@@ -36,40 +46,31 @@ spec:
                 configMapKeyRef:
                   name: liquibase-config
                   key: LIQUIBASE_PASSWORD
-          command: ["/bin/sh", "-c", "liquibase update --changeLogFile=${LIQUIBASE_CHANGELOG} --url=${LIQUIBASE_URL} --username=${LIQUIBASE_USER} --password=${LIQUIBASE_PASSWORD}"]
+          command:
+            - "sh"
+            - "-c"
+            - >
+              echo 'Using changelog file: ${LIQUIBASE_CHANGELOG}' &&
+              echo 'Using URL: ${LIQUIBASE_URL}' &&
+              liquibase update
+              --changeLogFile=${LIQUIBASE_CHANGELOG} 
+              --url=${LIQUIBASE_URL} 
+              --username=${LIQUIBASE_USER} 
+              --password=${LIQUIBASE_PASSWORD}
           volumeMounts:
             - name: changelog-volume
-              mountPath: /liquibase/change-log  # Путь в контейнере, где монтируются миграции
+              mountPath: /liquibase/change-log  # Путь внутри Init-контейнера
 
       containers:
-        - name: liquibase
-          image: liquibase/liquibase:4.30.0
-          env:
-            - name: LIQUIBASE_CHANGELOG
-              valueFrom:
-                configMapKeyRef:
-                  name: liquibase-config
-                  key: LIQUIBASE_CHANGELOG
-            - name: LIQUIBASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: liquibase-config
-                  key: LIQUIBASE_URL
-            - name: LIQUIBASE_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: liquibase-config
-                  key: LIQUIBASE_USER
-            - name: LIQUIBASE_PASSWORD
-              valueFrom:
-                configMapKeyRef:
-                  name: liquibase-config
-                  key: LIQUIBASE_PASSWORD
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80  # Порт для Nginx
           volumeMounts:
             - name: changelog-volume
-              mountPath: /liquibase/change-log
+              mountPath: /usr/share/nginx/html  # Путь, куда монтируются файлы для Nginx
 
       volumes:
         - name: changelog-volume
           hostPath:
-            path: /mnt/c/Users/user/IdeaProjects/GitLbase/src/main/resources/db  # Абсолютный путь
+            path: /mnt/c/Users/user/IdeaProjects/GitLbase/src/main/resources/db  # Локальная папка с миграциями
