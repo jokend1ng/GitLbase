@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-container
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-container
+  template:
+    metadata:
+      labels:
+        app: simple-container
+    spec:
+      containers:
+        - name: alpine
+          image: alpine:latest
+          command: ["/bin/sh", "-c", "while true; do sleep 30; done"]  # Бесконечный цикл, чтобы контейнер оставался активным
+          volumeMounts:
+            - name: simple-volume
+              mountPath: /data  # Путь, куда будет монтироваться локальная директория
+      volumes:
+        - name: simple-volume
+          hostPath:
+            path: /mnt/c/Users/user/IdeaProjects/GitLbase/src/main/resources/db

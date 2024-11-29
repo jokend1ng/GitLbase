@@ -3,15 +3,15 @@ kind: ConfigMap
 metadata:
   name: liquibase-config
 data:
-  LIQUIBASE_CHANGELOG: "/liquibase/change-log/sqlMigration/init.sql"
-  LIQUIBASE_URL: "jdbc:postgresql://host.docker.internal:5432/postgres"
+  LIQUIBASE_CHANGELOG: "/liquibase/init.sql"  # Обновлено с ./init.sql на абсолютный путь в контейнере
+  LIQUIBASE_URL: "jdbc:postgresql://192.168.1.181:5432/postgres"
   LIQUIBASE_USER: "postgres"
   LIQUIBASE_PASSWORD: "postgres"
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: li
+  name: liquibase-nginx-deployment
 spec:
   replicas: 1
   selector:
@@ -24,7 +24,7 @@ spec:
     spec:
       initContainers:
         - name: liquibase-init
-          image: liquibase/liquibase:4.30.0
+          image: liquibase/liquibase:latest
           env:
             - name: LIQUIBASE_CHANGELOG
               valueFrom:
@@ -50,8 +50,6 @@ spec:
             - "sh"
             - "-c"
             - >
-              echo 'Using changelog file: ${LIQUIBASE_CHANGELOG}' &&
-              echo 'Using URL: ${LIQUIBASE_URL}' &&
               liquibase update
               --changeLogFile=${LIQUIBASE_CHANGELOG} 
               --url=${LIQUIBASE_URL} 
@@ -59,7 +57,7 @@ spec:
               --password=${LIQUIBASE_PASSWORD}
           volumeMounts:
             - name: changelog-volume
-              mountPath: /liquibase/change-log  # Путь внутри Init-контейнера
+              mountPath: /liquibase  # Убедитесь, что этот путь совпадает с тем, где хранится init.sql
 
       containers:
         - name: nginx
@@ -68,9 +66,9 @@ spec:
             - containerPort: 80  # Порт для Nginx
           volumeMounts:
             - name: changelog-volume
-              mountPath: /usr/share/nginx/html  # Путь, куда монтируются файлы для Nginx
+              mountPath: /usr/share/nginx/html  # Указываем путь, где Nginx будет искать файлы
 
       volumes:
         - name: changelog-volume
           hostPath:
-            path: /mnt/c/Users/user/IdeaProjects/GitLbase/src/main/resources/db  # Локальная папка с миграциями
+            path: /mnt/c/Users/user/IdeaProjects/GitLbase/src/main/resources/db/sqlMigration  # Локальный путь к файлам
