@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: liquibase-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: liquibase
+  template:
+    metadata:
+      labels:
+        app: liquibase
+    spec:
+      initContainers:
+        - name: liquibase-init
+          image: liquibase/liquibase:4.30.0
+          env:
+            - name: LIQUIBASE_CHANGELOG
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_CHANGELOG
+            - name: LIQUIBASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_URL
+            - name: LIQUIBASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_USER
+            - name: LIQUIBASE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_PASSWORD
+          command: ["/bin/sh", "-c", "liquibase update --changeLogFile=${LIQUIBASE_CHANGELOG} --url=${LIQUIBASE_URL} --username=${LIQUIBASE_USER} --password=${LIQUIBASE_PASSWORD}"]
+          volumeMounts:
+            - name: changelog-volume
+              mountPath: /liquibase/change-log  # Путь в контейнере, где монтируются миграции
+
+      containers:
+        - name: liquibase
+          image: liquibase/liquibase:4.30.0
+          env:
+            - name: LIQUIBASE_CHANGELOG
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_CHANGELOG
+            - name: LIQUIBASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_URL
+            - name: LIQUIBASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_USER
+            - name: LIQUIBASE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: liquibase-config
+                  key: LIQUIBASE_PASSWORD
+          volumeMounts:
+            - name: changelog-volume
+              mountPath: /liquibase/change-log
+
+      volumes:
+        - name: changelog-volume
+          hostPath:
+            path: /mnt/c/Users/user/IdeaProjects/GitLbase/src/main/resources/db  # Абсолютный путь

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  liquibase:
+    image: liquibase/liquibase:4.30.0
+    volumes:
+      - ./src/main/resources/db:/liquibase/change-log  # Монтируем локальную папку с миграциями
+    environment:
+      LIQUIBASE_CHANGELOG: "/change-log/sqlMigration/init.sql"  # Путь к файлу миграции
+      LIQUIBASE_URL: "jdbc:postgresql://host.docker.internal:5432/postgres"  # URL вашей базы данных
+      LIQUIBASE_USER: "postgres"  # Имя пользователя
+      LIQUIBASE_PASSWORD: "postgres"  # Пароль
+    command: >
+      sh -c "echo 'Using changelog file: ${LIQUIBASE_CHANGELOG}' && 
+      echo 'Using URL: ${LIQUIBASE_URL}' && 
+      liquibase update 
+      --changeLogFile=${LIQUIBASE_CHANGELOG} 
+      --url=${LIQUIBASE_URL} 
+      --username=${LIQUIBASE_USER} 
+      --password=${LIQUIBASE_PASSWORD}"

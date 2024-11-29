@@ -1,0 +1,48 @@
+image: my-liquibase-image  # Убедитесь, что этот образ доступен
+
+services:
+  - name: postgres:latest
+    alias: db
+
+variables:
+  DB_HOST: db
+  DB_PORT: 5432
+  DB_NAME: my_database
+  DB_USER: my_user
+  DB_PASSWORD: my_password
+
+stages:
+  - migrate
+
+# Миграция для стенда 1
+migrate_stand1:
+  stage: migrate
+  script:
+    - liquibase --changeLogFile=/liquibase/changelogs/db.changelog-master.xml \
+      --url="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}" \
+      --username=${DB_USER} \
+      --password=${DB_PASSWORD} \
+      update
+  when: manual  # Запускать миграцию вручную
+
+# Миграция для стенда 2
+migrate_stand2:
+  stage: migrate
+  script:
+    - liquibase --changeLogFile=/liquibase/changelogs/db.changelog-master.xml \
+      --url="jdbc:postgresql://stand2:5432/${DB_NAME}" \
+      --username=${DB_USER} \
+      --password=${DB_PASSWORD} \
+      update
+  when: manual  # Запускать миграцию вручную
+
+# Миграция для стенда 3
+migrate_stand3:
+  stage: migrate
+  script:
+    - liquibase --changeLogFile=/liquibase/changelogs/db.changelog-master.xml \
+      --url="jdbc:postgresql://stand3:5432/${DB_NAME}" \
+      --username=${DB_USER} \
+      --password=${DB_PASSWORD} \
+      update
+  when: manual  # Запускать миграцию вручную
